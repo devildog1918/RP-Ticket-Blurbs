@@ -1,4 +1,4 @@
-const CACHE = "ft-useful-v1";
+const CACHE = "ft-useful-v2";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
