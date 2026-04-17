@@ -2,892 +2,726 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f172a" />
-  <link rel="manifest" href="./manifest.json" />
-  <title>RP Ticket Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RP Blurb Library</title>
+  <meta name="theme-color" content="#8b1e2d" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="RP Blurb Library" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <style>
     :root {
-      --bg: #0b1220;
-      --panel: #111827;
-      --panel2: #0f172a;
-      --line: rgba(148,163,184,.16);
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --accent: #38bdf8;
-      --good: #22c55e;
-      --warn: #f59e0b;
-      --radius: 16px;
-      --shadow: 0 10px 25px rgba(0,0,0,.25);
-      --nav-h: 76px;
-      --max: 980px;
-      --font: Inter, Roboto, Arial, sans-serif;
+      --bg: #f4f6f8;
+      --card: #ffffff;
+      --text: #1f2933;
+      --muted: #6b7280;
+      --accent: #8b1e2d;
+      --accent-dark: #6f1824;
+      --border: #d8dee4;
+      --shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+      --radius: 14px;
     }
+
     * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
-    body { display: flex; justify-content: center; }
-    .app { width: 100%; max-width: var(--max); min-height: 100vh; background: linear-gradient(180deg,#0b1220 0%,#0f172a 100%); }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
     .topbar {
-      position: sticky; top: 0; z-index: 20; height: 64px; display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; background: rgba(11,18,32,.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 18px;
     }
-    .brand { font-weight: 800; font-size: 1.05rem; }
-    .subbrand { color: var(--muted); font-size: .78rem; }
-    .top-actions { display: flex; gap: 8px; }
-    .screen { display: none; padding: 16px; padding-bottom: calc(var(--nav-h) + 26px); }
-    .screen.active { display: block; }
-    .section { margin-bottom: 18px; }
-    .section-title { margin: 0 0 10px; color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; }
-    .card {
-      background: rgba(17,24,39,.96); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow);
+
+    .title {
+      margin: 0 0 6px;
+      font-size: 28px;
+      font-weight: 700;
     }
-    .stack { display: flex; flex-direction: column; gap: 10px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .stats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
-    .stat { background: rgba(15,23,42,.85); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
-    .stat-label { color: var(--muted); font-size: .78rem; margin-bottom: 6px; }
-    .stat-value { font-size: 1.35rem; font-weight: 800; }
-    .filters { display: flex; gap: 8px; overflow-x: auto; }
-    .filters::-webkit-scrollbar { display: none; }
-    .chip, .btn, .nav-btn {
-      border: 1px solid var(--line); background: rgba(15,23,42,.85); color: var(--text); border-radius: 12px; padding: 10px 12px; cursor: pointer; font: inherit;
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
     }
-    .chip.active, .btn.primary, .nav-btn.active { background: rgba(56,189,248,.16); border-color: rgba(56,189,248,.35); color: #d8f3ff; }
-    .btn.good { background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.3); color: #dcfce7; }
-    .btn.warn { background: rgba(245,158,11,.14); border-color: rgba(245,158,11,.3); color: #fef3c7; }
-    .input, .textarea, .select {
-      width: 100%; border: 1px solid var(--line); background: rgba(15,23,42,.92); color: var(--text); border-radius: 12px; padding: 12px 13px; font: inherit;
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1.4fr 0.8fr auto auto;
+      gap: 10px;
+      margin-top: 16px;
     }
-    .textarea { min-height: 110px; resize: vertical; }
-    .tickets { display: flex; flex-direction: column; gap: 10px; }
-    .ticket { border: 1px solid var(--line); background: rgba(15,23,42,.94); border-radius: 16px; padding: 14px; cursor: pointer; }
-    .ticket-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
-    .ticket-id { color: var(--muted); font-size: .76rem; margin-bottom: 4px; }
-    .ticket-title { font-weight: 800; }
-    .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-    .pill { border: 1px solid var(--line); background: rgba(31,41,55,.85); border-radius: 999px; padding: 6px 9px; font-size: .74rem; }
-    .tiny { color: var(--muted); font-size: .82rem; }
-    .info-grid, .actions-grid, .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .info { background: rgba(15,23,42,.72); border: 1px solid rgba(148,163,184,.1); border-radius: 12px; padding: 10px; }
-    .info-label { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
-    .timeline { display: flex; flex-wrap: wrap; gap: 8px; }
-    .step { padding: 8px 10px; border-radius: 999px; background: rgba(15,23,42,.84); border: 1px solid var(--line); color: var(--muted); font-size: .8rem; }
-    .step.active { background: rgba(56,189,248,.16); border-color: rgba(56,189,248,.28); color: #d8f3ff; }
-    .checklist { display: flex; flex-direction: column; gap: 10px; }
-    .check { display: flex; gap: 10px; align-items: start; border: 1px solid rgba(148,163,184,.12); background: rgba(15,23,42,.72); border-radius: 12px; padding: 10px; }
-    .blurb { white-space: pre-wrap; line-height: 1.45; background: rgba(15,23,42,.88); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
-    .notes { display: flex; flex-direction: column; gap: 8px; }
-    .note { background: rgba(15,23,42,.72); border: 1px solid rgba(148,163,184,.12); border-radius: 12px; padding: 10px; }
-    .empty { text-align: center; color: var(--muted); padding: 24px 10px; border: 1px dashed rgba(148,163,184,.2); border-radius: 16px; }
-    .bottom-nav {
-      position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: 100%; max-width: var(--max); z-index: 25;
-      padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: linear-gradient(180deg,rgba(11,18,32,0) 0%,rgba(11,18,32,.95) 28%,rgba(11,18,32,.98) 100%);
+
+    input, textarea, select, button {
+      font: inherit;
     }
-    .bottom-nav-inner { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; background: rgba(17,24,39,.94); border: 1px solid var(--line); border-radius: 18px; padding: 8px; box-shadow: var(--shadow); }
-    .nav-btn { background: transparent; border: 0; color: var(--muted); display: flex; flex-direction: column; gap: 5px; align-items: center; justify-content: center; }
-    .nav-btn.active { color: #d8f3ff; }
-    .toast {
-      position: fixed; top: 78px; left: 50%; transform: translateX(-50%) translateY(-12px); opacity: 0; pointer-events: none; transition: .18s ease;
-      background: rgba(17,24,39,.96); color: #d8f3ff; border: 1px solid rgba(56,189,248,.26); border-radius: 12px; padding: 12px 14px; z-index: 50;
+
+    input, textarea, select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    @media (min-width:760px) { .stats { grid-template-columns: repeat(4,minmax(0,1fr)); } .quick-grid { grid-template-columns: repeat(4,1fr); } }
-    @media (max-width:560px) { .row, .info-grid, .actions-grid, .quick-grid { grid-template-columns: 1fr; } .ticket-top { flex-direction: column; } }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover {
+      background: var(--accent-dark);
+    }
+
+    button.secondary {
+      background: #4b5563;
+    }
+
+    button.secondary:hover {
+      background: #374151;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 18px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .blurb-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 70vh;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .blurb-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .blurb-item:hover,
+    .blurb-item.active {
+      border-color: var(--accent);
+      background: #fff7f8;
+    }
+
+    .blurb-name {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .blurb-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      padding: 10px 0;
+    }
+
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .detail-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .blurb-body {
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      min-height: 280px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 18px;
+    }
+
+    .small-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .controls,
+      .small-row {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <header class="topbar">
-      <div>
-        <div class="brand">RP Ticket Assistant</div>
-        <div class="subbrand">Personal workflow tool for all ticket categories</div>
+    <section class="topbar">
+      <h1 class="title">RP Blurb Library</h1>
+      <p class="subtitle">Search blurbs by name, open them fast, and copy them into TOPdesk tickets.</p>
+
+      <div class="controls">
+        <input type="text" id="searchInput" placeholder="Search blurb name or keyword..." />
+        <select id="categoryFilter">
+          <option value="all">All Categories</option>
+        </select>
+        <button id="newBlurbBtn">New Blurb</button>
+        <button id="exportBtn" class="secondary">Export JSON</button>
       </div>
-      <div class="top-actions">
-        <button class="btn" id="resetDemoBtn" type="button">Reset</button>
-        <button class="btn primary" id="newTicketBtn" type="button">+ Ticket</button>
+    </section>
+
+    <section class="layout">
+      <div class="panel">
+        <h2>Blurb List</h2>
+        <div id="blurbList" class="blurb-list"></div>
       </div>
-    </header>
 
-    <main>
-      <section class="screen active" id="screen-dashboard">
-        <div class="section"><p class="section-title">Overview</p><div class="stats" id="statsGrid"></div></div>
-        <div class="section"><p class="section-title">Filter by category</p><div class="filters" id="categoryFilters"></div></div>
-        <div class="section"><p class="section-title">Find ticket</p><input class="input" id="searchInput" type="text" placeholder="Search ID, user, summary, category, campus..." /></div>
-        <div class="section"><p class="section-title">My tickets</p><div class="tickets" id="ticketList"></div></div>
-      </section>
-
-      <section class="screen" id="screen-detail">
-        <div class="section">
-          <div class="card stack">
-            <div class="ticket-id" id="detailTicketId">—</div>
-            <div class="ticket-title" id="detailTitle">Select a ticket</div>
-            <div class="tiny" id="detailSubtitle">—</div>
-            <button class="btn" id="backToDashboardBtn" type="button">← Back</button>
-            <div class="info-grid" id="detailInfoGrid"></div>
-          </div>
-        </div>
-        <div class="section"><p class="section-title">Workflow</p><div class="card"><div class="timeline" id="timeline"></div></div></div>
-        <div class="section"><p class="section-title">Actions</p><div class="actions-grid" id="actionsGrid"></div></div>
-        <div class="section"><p class="section-title">Checklist</p><div class="card"><div class="checklist" id="checklist"></div></div></div>
-        <div class="section">
-          <p class="section-title">Blurb</p>
-          <div class="card stack">
-            <div class="row">
-              <div><label class="tiny" for="varDate">Date</label><input class="input" id="varDate" type="date" /></div>
-              <div><label class="tiny" for="varDevice">Device</label><input class="input" id="varDevice" type="text" placeholder="Device or item" /></div>
-            </div>
-            <div class="row">
-              <div><label class="tiny" for="varMtn">MTN / Ref</label><input class="input" id="varMtn" type="text" placeholder="Phone, asset, or reference" /></div>
-              <div><label class="tiny" for="varBudget">Budget / Note</label><input class="input" id="varBudget" type="text" placeholder="Budget code or short note" /></div>
-            </div>
-            <div class="blurb" id="blurbPreview">No blurb available.</div>
-            <div class="row">
-              <button class="btn primary" id="copyBlurbBtn" type="button">Copy Blurb</button>
-              <button class="btn" id="addBlurbAsNoteBtn" type="button">Add Blurb to Notes</button>
-            </div>
-          </div>
-        </div>
-        <div class="section">
-          <p class="section-title">Notes</p>
-          <div class="card stack">
-            <textarea class="textarea" id="noteInput" placeholder="Add a note, reminder, status update, or call summary..."></textarea>
-            <div class="row">
-              <button class="btn primary" id="saveNoteBtn" type="button">Save Note</button>
-              <button class="btn" id="clearNoteBtn" type="button">Clear</button>
-            </div>
-            <div class="notes" id="notesList"></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="screen" id="screen-quick">
-        <div class="section"><p class="section-title">Quick actions</p>
-          <div class="quick-grid">
-            <button class="btn primary quick-action" type="button" data-step="Order Submitted">📦 Order Submitted</button>
-            <button class="btn good quick-action" type="button" data-step="Received">🚚 Item Received</button>
-            <button class="btn warn quick-action" type="button" data-step="Ready for Pickup / Interoffice">📅 Ready / Schedule</button>
-            <button class="btn good quick-action" type="button" data-step="Completed">✅ Completed</button>
-          </div>
-        </div>
-        <div class="section"><p class="section-title">Apply to selected ticket</p><div class="card stack"><select class="select" id="quickTicketSelect"></select><div class="tiny">Pick a ticket, then use the big buttons above.</div></div></div>
-        <div class="section"><p class="section-title">Quick search</p><div class="card stack"><input class="input" id="quickSearchInput" type="text" placeholder="Find and open a ticket fast..." /><div class="tickets" id="quickSearchResults"></div></div></div>
-      </section>
-
-      <section class="screen" id="screen-manage">
-        <div class="section">
-          <p class="section-title">New ticket</p>
-          <div class="card stack">
-            <div class="row">
-              <div><label class="tiny" for="newSummary">Summary</label><input class="input" id="newSummary" type="text" placeholder="Short ticket summary" /></div>
-              <div><label class="tiny" for="newRequestor">Requestor</label><input class="input" id="newRequestor" type="text" placeholder="Name" /></div>
-            </div>
-            <div class="row">
-              <div><label class="tiny" for="newCategory">Category</label><select class="select" id="newCategory"></select></div>
-              <div><label class="tiny" for="newSubcategory">Subcategory</label><input class="input" id="newSubcategory" type="text" placeholder="Upgrade, Printer, Form, Badge..." /></div>
-            </div>
-            <div class="row">
-              <div><label class="tiny" for="newCampus">Campus / Location</label><input class="input" id="newCampus" type="text" placeholder="Location" /></div>
-              <div><label class="tiny" for="newPriority">Priority</label><select class="select" id="newPriority"><option>Low</option><option selected>Normal</option><option>High</option><option>Urgent</option></select></div>
-            </div>
-            <div class="row">
-              <div><label class="tiny" for="newAssigned">Assigned To</label><input class="input" id="newAssigned" type="text" placeholder="Tech or group" /></div>
-              <div><label class="tiny" for="newRef">Phone / Asset / Ref</label><input class="input" id="newRef" type="text" placeholder="MTN, badge ID, asset, etc." /></div>
-            </div>
-            <button class="btn primary" id="createTicketBtn" type="button">Create Ticket</button>
-          </div>
+      <div class="panel">
+        <div id="detailView">
+          <div class="empty">Select a blurb from the list or create a new one.</div>
         </div>
 
-        <div class="section">
-          <p class="section-title">Import real tickets</p>
-          <div class="card stack">
-            <div class="tiny">Import from CSV or JSON export.</div>
-            <input class="input" id="importFileInput" type="file" accept=".csv,.json" />
-            <div class="tiny">Supported CSV headers: id, summary, requestor, category, subcategory, campus, priority, assignedTo, reference, universalStatus, workflowStep, nextAction</div>
-            <textarea class="textarea" id="pasteImportInput" placeholder="Or paste JSON array here..."></textarea>
-            <div class="row">
-              <button class="btn primary" id="importTicketsBtn" type="button">Import Tickets</button>
-              <button class="btn" id="exportTicketsBtn" type="button">Export Current Tickets</button>
-            </div>
+        <hr style="margin:18px 0; border:none; border-top:1px solid var(--border);">
+
+        <h2 id="formTitle">Add / Edit Blurb</h2>
+        <div class="form-grid">
+          <input type="hidden" id="blurbId" />
+          <input type="text" id="blurbName" placeholder="Blurb name" />
+          <div class="small-row">
+            <input type="text" id="blurbCategory" placeholder="Category (example: Cellular Devices)" />
+            <input type="text" id="blurbTags" placeholder="Tags (comma separated)" />
           </div>
+          <textarea id="blurbText" placeholder="Paste the full blurb here..."></textarea>
+          <div class="detail-actions">
+            <button id="saveBtn">Save Blurb</button>
+            <button id="clearBtn" class="secondary">Clear Form</button>
+            <label for="importFile" style="display:inline-block;">
+              <span style="display:none;">Import</span>
+              <input type="file" id="importFile" accept="application/json" style="display:none;">
+              <button type="button" id="importBtn" class="secondary">Import JSON</button>
+            </label>
+          </div>
+          <div class="status" id="statusMsg"></div>
         </div>
-
-        <div class="section"><p class="section-title">About</p><div class="card stack"><div>This version is local-first and stores data in your browser with <strong>localStorage</strong>.</div><div>You can import real tickets from CSV or JSON.</div></div></div>
-      </section>
-    </main>
-
-    <nav class="bottom-nav">
-      <div class="bottom-nav-inner">
-        <button class="nav-btn active" type="button" data-screen="dashboard"><span>🏠</span><span>Dashboard</span></button>
-        <button class="nav-btn" type="button" data-screen="detail"><span>🎫</span><span>Detail</span></button>
-        <button class="nav-btn" type="button" data-screen="quick"><span>⚡</span><span>Quick</span></button>
-        <button class="nav-btn" type="button" data-screen="manage"><span>🛠️</span><span>Manage</span></button>
       </div>
-    </nav>
-
-    <div class="toast" id="toast"></div>
+    </section>
   </div>
 
   <script>
-    const STORAGE_KEY = 'rp-ticket-assistant-data-v3';
-    const universalStatuses = ['New','Active','Waiting','Scheduled','Complete','Closed'];
-    const categoryConfig = {
-      'Cellular Devices': {
-        steps: ['Request','Pending Approval','Approved','Order Submitted','Shipped','Received','Processing','Ready for Pickup / Interoffice','Completed'],
-        checklist: {
-          'Request': ['Review request details','Confirm line type or device need','Verify requester and department'],
-          'Pending Approval': ['Verify approval requirement','Confirm any budget or department approval','Set follow-up reminder'],
-          'Approved': ['Approval confirmed','Validate device choice','Prepare order details'],
-          'Order Submitted': ['Order emailed/submitted','Budget code captured if needed','Stakeholders copied if needed'],
-          'Shipped': ['Tracking available','Expected arrival noted','Prepare receiving steps'],
-          'Received': ['Device physically received','Match item to ticket','Check for accessories or case'],
-          'Processing': ['Update software/setup','Label device if needed','Prepare pickup or delivery'],
-          'Ready for Pickup / Interoffice': ['Notify user or department','Confirm pickup/interoffice method','Prepare sign-out/invoice if needed'],
-          'Completed': ['Old device received if required','Final note added','Ticket ready to close']
-        },
-        blurbs: {
-          'Request': 'Request received for [DEVICE]. Initial review is in progress. Reference: [MTN].',
-          'Pending Approval': 'This request is pending required approval before the order can move forward. Follow-up date: [DATE]. Note: [BUDGET].',
-          'Approved': 'Approval has been confirmed for [DEVICE]. Order preparation is complete and submission is the next step.',
-          'Order Submitted': 'The order for [DEVICE] has been submitted on [DATE]. Reference: [MTN]. Additional note: [BUDGET].',
-          'Shipped': 'The requested item has shipped. Continue to monitor delivery and update the ticket upon receipt. Reference: [MTN].',
-          'Received': 'The requested item has been received on [DATE]. Processing and setup will be completed before release to the user.',
-          'Processing': 'Processing is underway for [DEVICE]. Setup, updates, and any required configuration are being completed.',
-          'Ready for Pickup / Interoffice': '[DEVICE] is ready as of [DATE]. Coordinate pickup or interoffice delivery. Reference: [MTN].',
-          'Completed': 'Work for this request has been completed. Final item: [DEVICE]. Completion date: [DATE]. Reference: [MTN].'
-        }
+    const STORAGE_KEY = 'rp_blurb_library_v1';
+
+    const starterBlurbs = [
+      {
+        id: crypto.randomUUID(),
+        name: 'New Line Request Received',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'new line', 'request'],
+        text: '📱 NEW LINE REQUEST RECEIVED – Your request has been received and is under review. Required approval and eligibility will be verified before the order is submitted. You will be updated with the next step once review is complete. Thank you.'
       },
-      'ID Badges': {
-        steps: ['Request','Photo / Verification','Printed','Ready for Pickup','Completed'],
-        checklist: {
-          'Request': ['Verify badge request details','Confirm employee/student info'],
-          'Photo / Verification': ['Capture or verify photo','Validate required identity details'],
-          'Printed': ['Badge printed','Print quality checked'],
-          'Ready for Pickup': ['Notify user','Prepare pickup/sign-out'],
-          'Completed': ['Badge delivered or picked up','Final note added']
-        },
-        blurbs: {
-          'Request': 'Badge request received and under review.',
-          'Photo / Verification': 'Photo and identity verification are in progress for this badge request.',
-          'Printed': 'The badge has been printed and is being prepared for release.',
-          'Ready for Pickup': 'The badge is ready for pickup as of [DATE].',
-          'Completed': 'Badge request completed on [DATE].'
-        }
+      {
+        id: crypto.randomUUID(),
+        name: 'Upgrade Request Received',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'upgrade', 'request'],
+        text: '📱 UPGRADE REQUEST RECEIVED – Your upgrade request has been received. Device eligibility is being reviewed. You will be notified once eligibility has been confirmed and the order is ready to be submitted. Thank you.'
       },
-      'SoftDocs': {
-        steps: ['Request','Needs Clarification','Assigned','Testing','Completed'],
-        checklist: {
-          'Request': ['Review issue summary','Confirm requester details'],
-          'Needs Clarification': ['Identify missing details','Contact requester'],
-          'Assigned': ['Assigned to correct specialist','Set next follow-up'],
-          'Testing': ['Validate issue or fix','Document results'],
-          'Completed': ['User informed','Final note entered']
-        },
-        blurbs: {
-          'Request': 'SoftDocs request received and initial review is underway.',
-          'Needs Clarification': 'Additional information is required before this SoftDocs request can proceed. Follow-up date: [DATE].',
-          'Assigned': 'This SoftDocs request has been assigned for review and resolution.',
-          'Testing': 'Testing is in progress for this SoftDocs request.',
-          'Completed': 'SoftDocs request completed on [DATE].'
-        }
+      {
+        id: crypto.randomUUID(),
+        name: 'Upgrade Eligible - Order Scheduled',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'upgrade eligible', 'order scheduled'],
+        text: '📱 UPGRADE ELIGIBLE – The device is eligible for upgrade. The order will be submitted on [DATE]. Once submitted, the ticket will be updated with the next step. Thank you.'
       },
-      'General Support': {
-        steps: ['Request','In Progress','Waiting on User','Scheduled','Resolved','Closed'],
-        checklist: {
-          'Request': ['Review issue details','Confirm scope and urgency'],
-          'In Progress': ['Troubleshooting started','Document work performed'],
-          'Waiting on User': ['User contacted','Waiting for reply or action'],
-          'Scheduled': ['Appointment or visit scheduled','Time confirmed'],
-          'Resolved': ['Issue resolved','User informed'],
-          'Closed': ['Closure documented','No further action required']
-        },
-        blurbs: {
-          'Request': 'General support request received and under review.',
-          'In Progress': 'Work is in progress on this request.',
-          'Waiting on User': 'This request is waiting on user response or action as of [DATE].',
-          'Scheduled': 'Work for this request has been scheduled for [DATE].',
-          'Resolved': 'The reported issue has been resolved.',
-          'Closed': 'This ticket has been closed on [DATE].'
-        }
+      {
+        id: crypto.randomUUID(),
+        name: 'Order Approved',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'approved', 'verizon'],
+        text: '📱 ORDER APPROVED – The request has been approved and is ready for carrier submission. The order will now be submitted to Verizon and the ticket will be updated once shipment information is available. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Phone Order Submitted',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'order submitted', 'verizon'],
+        text: '📱 ORDER SUBMITTED – The device order has been submitted to Verizon. Shipment information is pending. The ticket will be updated once tracking or delivery details are available. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Phone Order Shipped',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'shipped', 'tracking'],
+        text: '📱 ORDER SHIPPED – The device order is in transit. Delivery is being monitored and the ticket will be updated once the device has been received. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Device Received / Processing',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'received', 'processing'],
+        text: '📱 DEVICE RECEIVED – The device has been received and is now being processed. Configuration, activation, and accessory preparation will be completed before the next step. You will be contacted once the device is ready. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Ready for Pickup / Appointment Required',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'pickup', 'appointment'],
+        text: '📱 READY FOR PICKUP – Your device is ready. Please reply with your availability to schedule a pickup appointment Monday through Thursday between 7:00 AM and 1:30 PM. If replacing an existing device, please ensure the old device is prepared for turnover before your appointment. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Appointment Confirmed',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'appointment confirmed', 'pickup'],
+        text: '📅 PICKUP APPOINTMENT CONFIRMED – Your pickup appointment has been confirmed for [DATE/TIME]. If you need to reschedule, please reply to this ticket. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Interoffice Delivery - Maintenance Flow',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'interoffice', 'maintenance'],
+        text: '📱🏢 INTEROFFICE DELIVERY – The device has been processed and sent through interoffice mail for department delivery. Please ensure the signed documentation and old device, if applicable, are returned to the Cellular Device Team. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Old Device Received',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'old device', 'return'],
+        text: '📦 OLD DEVICE RECEIVED – The previous device has been received and documented. It will now be processed for reset, reassignment, or recycling as appropriate. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Order Complete',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'complete', 'issued'],
+        text: '📱📡 DEVICE ORDER COMPLETE – The device has been issued, configured, and activated. The signed Device Assignment Agreement has been received and documented. For any future issues or requests related to this device, please submit a new ticket. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Suspend Line - Request Received',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'suspend', 'request'],
+        text: '⏸️ SUSPEND LINE REQUEST RECEIVED – Your request to suspend the cellular line has been received and is being processed. The ticket will be updated once the suspension has been completed. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Suspend Line - In Progress',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'suspend', 'in progress'],
+        text: '⏸️ SUSPEND LINE IN PROGRESS – The request to suspend the cellular line is currently being processed with the carrier. The ticket will be updated once the change has been completed. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Suspend Line - Completed',
+        category: 'Cellular Devices',
+        tags: ['cellular', 'suspend', 'completed'],
+        text: '⏸️ CELLULAR LINE SUSPENDED – The cellular line has been successfully suspended. Service can be reactivated through a new request when needed. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'New Hot Spot Request',
+        category: 'Hot Spots',
+        tags: ['hot spot', 'new', 'request'],
+        text: '📡 NEW HOT SPOT REQUEST – Your request for a new hot spot has been received and is under review. You will be notified once approved and submitted. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Upgrade Hot Spot Request',
+        category: 'Hot Spots',
+        tags: ['hot spot', 'upgrade', 'request'],
+        text: '📡 HOT SPOT UPGRADE REQUEST – Your upgrade request has been received. Eligibility is being reviewed. You will be notified when submitted. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Hot Spot Order Submitted',
+        category: 'Hot Spots',
+        tags: ['hot spot', 'order submitted', 'vendor'],
+        text: '📡 HOT SPOT ORDER SUBMITTED – Order sent to vendor. Awaiting shipment confirmation. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Hot Spot Order Shipped',
+        category: 'Hot Spots',
+        tags: ['hot spot', 'shipped', 'tracking'],
+        text: '📡 HOT SPOT ORDER SHIPPED – Your order is in transit. Delivery status will be updated. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Hot Spot Order Received',
+        category: 'Hot Spots',
+        tags: ['hot spot', 'received', 'technology'],
+        text: '📡 HOT SPOT RECEIVED – Device received by Technology Department. Preparing for pickup. You will be contacted to schedule. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Hot Spot Ready for Pickup',
+        category: 'Hot Spots',
+        tags: ['hot spot', 'pickup', 'appointment'],
+        text: '📡 HOT SPOT READY FOR PICKUP – Please schedule an appointment to pick up your device at the ESC Help Desk. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Hot Spot Appointment Confirmed',
+        category: 'Hot Spots',
+        tags: ['hot spot', 'appointment confirmed', 'pickup'],
+        text: '📡 PICKUP APPOINTMENT CONFIRMED – Your appointment is confirmed. Please arrive at the scheduled time. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Student Hot Spot Activation',
+        category: 'Hot Spots',
+        tags: ['student', 'hot spot', 'activation'],
+        text: '📶 STUDENT HOT SPOT ACTIVATION – The hot spot has been activated for student use. The device is ready for deployment based on campus or department distribution procedures. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Student Hot Spot Transferred to Campus',
+        category: 'Hot Spots',
+        tags: ['student', 'hot spot', 'campus transfer'],
+        text: '📶🏢 STUDENT HOT SPOT TRANSFERRED TO CAMPUS – The activated hot spot has been sent through interoffice mail to the campus for distribution. Please coordinate final checkout and user assignment at the campus level. Thank you.'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Hot Spot Order Complete',
+        category: 'Hot Spots',
+        tags: ['hot spot', 'complete', 'issued'],
+        text: '📱📡 DEVICE ORDER COMPLETE – Device successfully issued; assignment agreement received and documented. Contact support for issues. Thank you.'
       }
-    };
+    ];
 
-    const demoData = {
-      selectedTicketId: 'RP-1001',
-      activeCategoryFilter: 'All',
-      tickets: [
-        { id: 'RP-1001', summary: 'iPhone upgrade for transportation admin', requestor: 'Tina Alvarez', category: 'Cellular Devices', subcategory: 'Upgrade', campus: 'ESC', priority: 'Normal', assignedTo: 'Rob', reference: '832-555-0144', universalStatus: 'Active', workflowStep: 'Order Submitted', nextAction: 'Watch for shipment and update ticket on receipt', updatedAt: new Date().toISOString(), notes: [{ at: new Date().toISOString(), text: 'Order submitted to vendor.' }], checklistState: { 'Order Submitted': [true, true, false] } },
-        { id: 'RP-1002', summary: 'Staff badge replacement', requestor: 'Sandra King', category: 'ID Badges', subcategory: 'Replacement', campus: 'Morton Ranch HS', priority: 'High', assignedTo: 'Rob', reference: 'Badge-2841', universalStatus: 'Scheduled', workflowStep: 'Ready for Pickup', nextAction: 'Notify user and complete pickup', updatedAt: new Date().toISOString(), notes: [], checklistState: {} },
-        { id: 'RP-1003', summary: 'SoftDocs form not loading', requestor: 'Patricia Gomez', category: 'SoftDocs', subcategory: 'Content Issue', campus: 'ESC', priority: 'Normal', assignedTo: 'Applications Team', reference: 'Form access issue', universalStatus: 'Waiting', workflowStep: 'Needs Clarification', nextAction: 'Get exact form name and screenshots', updatedAt: new Date().toISOString(), notes: [], checklistState: {} },
-        { id: 'RP-1004', summary: 'Projector connection issue', requestor: 'James Butler', category: 'General Support', subcategory: 'Classroom Support', campus: 'Cinco Ranch JH', priority: 'Normal', assignedTo: 'Field Tech', reference: 'Room 214', universalStatus: 'Active', workflowStep: 'In Progress', nextAction: 'Visit room and test cable path', updatedAt: new Date().toISOString(), notes: [], checklistState: {} }
-      ]
-    };
+    let blurbs = loadBlurbs();
+    let selectedId = null;
 
-    let appState = loadState();
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const blurbList = document.getElementById('blurbList');
+    const detailView = document.getElementById('detailView');
+    const statusMsg = document.getElementById('statusMsg');
 
-    const els = {
-      screens: {
-        dashboard: document.getElementById('screen-dashboard'),
-        detail: document.getElementById('screen-detail'),
-        quick: document.getElementById('screen-quick'),
-        manage: document.getElementById('screen-manage')
-      },
-      navButtons: Array.from(document.querySelectorAll('.nav-btn')),
-      statsGrid: document.getElementById('statsGrid'),
-      categoryFilters: document.getElementById('categoryFilters'),
-      ticketList: document.getElementById('ticketList'),
-      searchInput: document.getElementById('searchInput'),
-      detailTicketId: document.getElementById('detailTicketId'),
-      detailTitle: document.getElementById('detailTitle'),
-      detailSubtitle: document.getElementById('detailSubtitle'),
-      detailInfoGrid: document.getElementById('detailInfoGrid'),
-      timeline: document.getElementById('timeline'),
-      actionsGrid: document.getElementById('actionsGrid'),
-      checklist: document.getElementById('checklist'),
-      varDate: document.getElementById('varDate'),
-      varDevice: document.getElementById('varDevice'),
-      varMtn: document.getElementById('varMtn'),
-      varBudget: document.getElementById('varBudget'),
-      blurbPreview: document.getElementById('blurbPreview'),
-      copyBlurbBtn: document.getElementById('copyBlurbBtn'),
-      addBlurbAsNoteBtn: document.getElementById('addBlurbAsNoteBtn'),
-      notesList: document.getElementById('notesList'),
-      noteInput: document.getElementById('noteInput'),
-      saveNoteBtn: document.getElementById('saveNoteBtn'),
-      clearNoteBtn: document.getElementById('clearNoteBtn'),
-      backToDashboardBtn: document.getElementById('backToDashboardBtn'),
-      quickTicketSelect: document.getElementById('quickTicketSelect'),
-      quickSearchInput: document.getElementById('quickSearchInput'),
-      quickSearchResults: document.getElementById('quickSearchResults'),
-      toast: document.getElementById('toast'),
-      newTicketBtn: document.getElementById('newTicketBtn'),
-      resetDemoBtn: document.getElementById('resetDemoBtn'),
-      newCategory: document.getElementById('newCategory'),
-      newSummary: document.getElementById('newSummary'),
-      newRequestor: document.getElementById('newRequestor'),
-      newSubcategory: document.getElementById('newSubcategory'),
-      newCampus: document.getElementById('newCampus'),
-      newPriority: document.getElementById('newPriority'),
-      newAssigned: document.getElementById('newAssigned'),
-      newRef: document.getElementById('newRef'),
-      createTicketBtn: document.getElementById('createTicketBtn'),
-      importFileInput: document.getElementById('importFileInput'),
-      pasteImportInput: document.getElementById('pasteImportInput'),
-      importTicketsBtn: document.getElementById('importTicketsBtn'),
-      exportTicketsBtn: document.getElementById('exportTicketsBtn')
-    };
+    const blurbId = document.getElementById('blurbId');
+    const blurbName = document.getElementById('blurbName');
+    const blurbCategory = document.getElementById('blurbCategory');
+    const blurbTags = document.getElementById('blurbTags');
+    const blurbText = document.getElementById('blurbText');
 
-    init();
-
-    function init() {
-      populateCategorySelects();
-      setDefaultVars();
-      bindEvents();
-      renderAll();
-      showScreen('dashboard');
+    function loadBlurbs() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(starterBlurbs));
+        return starterBlurbs;
+      }
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return starterBlurbs;
+      }
     }
 
-    function bindEvents() {
-      els.navButtons.forEach(btn => btn.addEventListener('click', () => showScreen(btn.dataset.screen)));
-      els.searchInput.addEventListener('input', renderTicketList);
-      els.quickSearchInput.addEventListener('input', renderQuickSearchResults);
-      els.backToDashboardBtn.addEventListener('click', () => showScreen('dashboard'));
-      [els.varDate, els.varDevice, els.varMtn, els.varBudget].forEach(el => el.addEventListener('input', renderBlurbPreview));
-      els.copyBlurbBtn.addEventListener('click', copyCurrentBlurb);
-      els.addBlurbAsNoteBtn.addEventListener('click', addCurrentBlurbAsNote);
-      els.saveNoteBtn.addEventListener('click', saveManualNote);
-      els.clearNoteBtn.addEventListener('click', () => { els.noteInput.value = ''; });
-      document.querySelectorAll('.quick-action').forEach(btn => btn.addEventListener('click', () => quickApplyStep(btn.dataset.step)));
-      els.quickTicketSelect.addEventListener('change', e => { appState.selectedTicketId = e.target.value; persist(); renderDetail(); });
-      els.newTicketBtn.addEventListener('click', () => showScreen('manage'));
-      els.resetDemoBtn.addEventListener('click', resetDemoData);
-      els.createTicketBtn.addEventListener('click', createTicket);
-      els.importTicketsBtn.addEventListener('click', importTickets);
-      els.exportTicketsBtn.addEventListener('click', exportTickets);
+    function saveBlurbs() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(blurbs));
+      refreshCategoryFilter();
+      renderList();
     }
 
-    function showScreen(name) {
-      Object.keys(els.screens).forEach(key => els.screens[key].classList.toggle('active', key === name));
-      els.navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.screen === name));
+    function showStatus(message) {
+      statusMsg.textContent = message;
+      setTimeout(() => {
+        if (statusMsg.textContent === message) statusMsg.textContent = '';
+      }, 2500);
     }
 
-    function renderAll() {
-      renderStats();
-      renderCategoryFilters();
-      renderTicketList();
-      renderDetail();
-      renderQuickSelect();
-      renderQuickSearchResults();
+    function refreshCategoryFilter() {
+      const current = categoryFilter.value;
+      const categories = [...new Set(blurbs.map(b => (b.category || '').trim()).filter(Boolean))].sort();
+      categoryFilter.innerHTML = '<option value="all">All Categories</option>';
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        categoryFilter.appendChild(option);
+      });
+      if ([...categoryFilter.options].some(o => o.value === current)) {
+        categoryFilter.value = current;
+      }
     }
 
-    function renderStats() {
-      const counts = universalStatuses.map(status => ({ status, count: appState.tickets.filter(t => t.universalStatus === status).length }));
-      els.statsGrid.innerHTML = counts.map(item => `<div class="stat"><div class="stat-label">${escapeHtml(item.status)}</div><div class="stat-value">${item.count}</div></div>`).join('');
+    function getFilteredBlurbs() {
+      const search = searchInput.value.trim().toLowerCase();
+      const category = categoryFilter.value;
+
+      return blurbs
+        .filter(b => {
+          const matchesCategory = category === 'all' || b.category === category;
+          const haystack = [b.name, b.category, (b.tags || []).join(' '), b.text].join(' ').toLowerCase();
+          const matchesSearch = !search || haystack.includes(search);
+          return matchesCategory && matchesSearch;
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    function renderCategoryFilters() {
-      const cats = ['All', ...Object.keys(categoryConfig)];
-      els.categoryFilters.innerHTML = cats.map(cat => `<button class="chip ${appState.activeCategoryFilter === cat ? 'active' : ''}" type="button" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join('');
-      els.categoryFilters.querySelectorAll('.chip').forEach(btn => btn.addEventListener('click', () => {
-        appState.activeCategoryFilter = btn.dataset.category;
-        persist();
-        renderCategoryFilters();
-        renderTicketList();
-      }));
-    }
+    function renderList() {
+      const items = getFilteredBlurbs();
+      blurbList.innerHTML = '';
 
-    function renderTicketList() {
-      const term = els.searchInput.value.trim().toLowerCase();
-      const filtered = getFilteredTickets(term);
-      if (!filtered.length) {
-        els.ticketList.innerHTML = '<div class="empty">No tickets matched your current filter.</div>';
+      if (!items.length) {
+        blurbList.innerHTML = '<div class="empty">No blurbs found.</div>';
+        if (selectedId && !blurbs.find(b => b.id === selectedId)) {
+          selectedId = null;
+          renderDetail();
+        }
         return;
       }
-      els.ticketList.innerHTML = filtered.map(ticket => `
-        <div class="ticket" data-id="${ticket.id}">
-          <div class="ticket-top">
-            <div><div class="ticket-id">${escapeHtml(ticket.id)}</div><div class="ticket-title">${escapeHtml(ticket.summary)}</div></div>
-            <div class="pill">${escapeHtml(ticket.universalStatus)}</div>
-          </div>
-          <div class="meta">
-            <span class="pill">${escapeHtml(ticket.category)}</span>
-            <span class="pill">${escapeHtml(ticket.subcategory)}</span>
-            <span class="pill">${escapeHtml(ticket.workflowStep)}</span>
-          </div>
-          <div class="tiny">${escapeHtml(ticket.requestor)} • ${escapeHtml(ticket.campus)} • ${escapeHtml(ticket.priority)}</div>
-        </div>
-      `).join('');
-      els.ticketList.querySelectorAll('.ticket').forEach(card => card.addEventListener('click', () => {
-        appState.selectedTicketId = card.dataset.id;
-        persist();
-        renderDetail();
-        renderQuickSelect();
-        showScreen('detail');
-      }));
-    }
 
-    function getSelectedTicket() {
-      return appState.tickets.find(t => t.id === appState.selectedTicketId) || appState.tickets[0] || null;
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'blurb-item' + (item.id === selectedId ? ' active' : '');
+        div.innerHTML = `
+          <div class="blurb-name">${escapeHtml(item.name)}</div>
+          <div class="blurb-meta">${escapeHtml(item.category || 'Uncategorized')} • ${(item.tags || []).join(', ') || 'No tags'}</div>
+        `;
+        div.addEventListener('click', () => {
+          selectedId = item.id;
+          renderList();
+          renderDetail();
+          fillForm(item);
+        });
+        blurbList.appendChild(div);
+      });
     }
 
     function renderDetail() {
-      const ticket = getSelectedTicket();
-      if (!ticket) {
-        els.detailTicketId.textContent = '—';
-        els.detailTitle.textContent = 'No ticket selected';
-        els.detailSubtitle.textContent = 'Select a ticket from the dashboard.';
-        els.detailInfoGrid.innerHTML = '';
-        els.timeline.innerHTML = '';
-        els.actionsGrid.innerHTML = '';
-        els.checklist.innerHTML = '<div class="empty">No checklist available.</div>';
-        els.notesList.innerHTML = '<div class="empty">No notes yet.</div>';
-        els.blurbPreview.textContent = 'No blurb available.';
+      const item = blurbs.find(b => b.id === selectedId);
+      if (!item) {
+        detailView.innerHTML = '<div class="empty">Select a blurb from the list or create a new one.</div>';
         return;
       }
-      els.detailTicketId.textContent = ticket.id;
-      els.detailTitle.textContent = ticket.summary;
-      els.detailSubtitle.textContent = `${ticket.requestor} • ${ticket.category} • ${ticket.workflowStep}`;
-      if (!els.varDevice.value) els.varDevice.value = ticket.subcategory || ticket.summary;
-      if (!els.varMtn.value) els.varMtn.value = ticket.reference || '';
-      const info = [
-        ['Category', ticket.category], ['Subcategory', ticket.subcategory], ['Campus / Location', ticket.campus], ['Priority', ticket.priority],
-        ['Assigned', ticket.assignedTo], ['Universal Status', ticket.universalStatus], ['Next Action', ticket.nextAction || '—'], ['Reference', ticket.reference || '—']
-      ];
-      els.detailInfoGrid.innerHTML = info.map(([label, value]) => `<div class="info"><div class="info-label">${escapeHtml(label)}</div><div>${escapeHtml(value)}</div></div>`).join('');
-      const steps = categoryConfig[ticket.category]?.steps || [ticket.workflowStep];
-      els.timeline.innerHTML = steps.map(step => `<div class="step ${step === ticket.workflowStep ? 'active' : ''}">${escapeHtml(step)}</div>`).join('');
-      const currentIndex = steps.indexOf(ticket.workflowStep);
-      const actions = [ticket.workflowStep, ...steps.slice(currentIndex + 1, currentIndex + 4)].filter((v, i, arr) => arr.indexOf(v) === i);
-      els.actionsGrid.innerHTML = actions.map(step => `<button class="btn ${step === ticket.workflowStep ? '' : 'primary'}" type="button" data-step="${escapeHtml(step)}">${escapeHtml(step)}</button>`).join('');
-      els.actionsGrid.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => setWorkflowStep(ticket.id, btn.dataset.step)));
-      renderChecklist(ticket);
-      renderNotes(ticket);
-      renderBlurbPreview();
-    }
 
-    function renderChecklist(ticket) {
-      const items = categoryConfig[ticket.category]?.checklist?.[ticket.workflowStep] || [];
-      if (!items.length) {
-        els.checklist.innerHTML = '<div class="empty">No checklist for this step.</div>';
-        return;
-      }
-      const state = ticket.checklistState?.[ticket.workflowStep] || [];
-      els.checklist.innerHTML = items.map((item, i) => `<label class="check"><input type="checkbox" data-index="${i}" ${state[i] ? 'checked' : ''}><span>${escapeHtml(item)}</span></label>`).join('');
-      els.checklist.querySelectorAll('input').forEach(box => box.addEventListener('change', () => {
-        const fresh = getSelectedTicket();
-        if (!fresh.checklistState) fresh.checklistState = {};
-        if (!fresh.checklistState[fresh.workflowStep]) fresh.checklistState[fresh.workflowStep] = new Array(items.length).fill(false);
-        fresh.checklistState[fresh.workflowStep][Number(box.dataset.index)] = box.checked;
-        fresh.updatedAt = new Date().toISOString();
-        persist();
-      }));
-    }
+      detailView.innerHTML = `
+        <div class="detail-header">
+          <div>
+            <h3 class="detail-title">${escapeHtml(item.name)}</h3>
+            <div class="blurb-meta">${escapeHtml(item.category || 'Uncategorized')} • ${(item.tags || []).join(', ') || 'No tags'}</div>
+          </div>
+          <div class="detail-actions">
+            <button id="copyBtn">Copy Blurb</button>
+            <button id="deleteBtn" class="secondary">Delete</button>
+          </div>
+        </div>
+        <div class="blurb-body">${escapeHtml(item.text)}</div>
+      `;
 
-    function renderNotes(ticket) {
-      if (!ticket.notes || !ticket.notes.length) {
-        els.notesList.innerHTML = '<div class="empty">No notes yet.</div>';
-        return;
-      }
-      const sorted = [...ticket.notes].sort((a, b) => new Date(b.at) - new Date(a.at));
-      els.notesList.innerHTML = sorted.map(note => `<div class="note"><div class="tiny">${escapeHtml(formatDateTime(note.at))}</div><div>${escapeHtml(note.text)}</div></div>`).join('');
-    }
+      document.getElementById('copyBtn').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(item.text);
+          showStatus('Blurb copied to clipboard.');
+        } catch {
+          showStatus('Copy failed.');
+        }
+      });
 
-    function renderQuickSelect() {
-      els.quickTicketSelect.innerHTML = appState.tickets.map(ticket => `<option value="${ticket.id}" ${ticket.id === appState.selectedTicketId ? 'selected' : ''}>${ticket.id} — ${ticket.summary}</option>`).join('');
-    }
-
-    function renderQuickSearchResults() {
-      const term = els.quickSearchInput.value.trim().toLowerCase();
-      const tickets = getFilteredTickets(term).slice(0, 6);
-      if (!tickets.length) {
-        els.quickSearchResults.innerHTML = '<div class="empty">No matching tickets.</div>';
-        return;
-      }
-      els.quickSearchResults.innerHTML = tickets.map(ticket => `<div class="ticket" data-id="${ticket.id}"><div class="ticket-id">${escapeHtml(ticket.id)}</div><div class="ticket-title">${escapeHtml(ticket.summary)}</div><div class="tiny">${escapeHtml(ticket.category)} • ${escapeHtml(ticket.workflowStep)}</div></div>`).join('');
-      els.quickSearchResults.querySelectorAll('.ticket').forEach(card => card.addEventListener('click', () => {
-        appState.selectedTicketId = card.dataset.id;
-        persist();
+      document.getElementById('deleteBtn').addEventListener('click', () => {
+        blurbs = blurbs.filter(b => b.id !== item.id);
+        selectedId = null;
+        saveBlurbs();
         renderDetail();
-        renderQuickSelect();
-        showScreen('detail');
-      }));
-    }
-
-    function getFilteredTickets(searchTerm = '') {
-      return appState.tickets.filter(ticket => {
-        const categoryOk = appState.activeCategoryFilter === 'All' || ticket.category === appState.activeCategoryFilter;
-        const haystack = [ticket.id, ticket.summary, ticket.requestor, ticket.category, ticket.subcategory, ticket.campus, ticket.workflowStep, ticket.reference, ticket.assignedTo].join(' ').toLowerCase();
-        return categoryOk && (!searchTerm || haystack.includes(searchTerm));
+        clearForm();
+        showStatus('Blurb deleted.');
       });
     }
 
-    function setWorkflowStep(ticketId, step) {
-      const ticket = appState.tickets.find(t => t.id === ticketId);
-      if (!ticket) return;
-      ticket.workflowStep = step;
-      ticket.universalStatus = inferUniversalStatus(step);
-      ticket.nextAction = inferNextAction(ticket.category, step);
-      ticket.updatedAt = new Date().toISOString();
-      pushNote(ticket, `Workflow updated to: ${step}`);
-      persist();
-      renderAll();
-      showToast(`Updated ${ticket.id} to ${step}`);
+    function fillForm(item) {
+      blurbId.value = item.id;
+      blurbName.value = item.name || '';
+      blurbCategory.value = item.category || '';
+      blurbTags.value = (item.tags || []).join(', ');
+      blurbText.value = item.text || '';
+      document.getElementById('formTitle').textContent = 'Edit Blurb';
     }
 
-    function inferUniversalStatus(step) {
-      const map = {
-        'Request': 'New', 'Pending Approval': 'Waiting', 'Approved': 'Active', 'Order Submitted': 'Active', 'Shipped': 'Waiting', 'Received': 'Active',
-        'Processing': 'Active', 'Ready for Pickup / Interoffice': 'Scheduled', 'Completed': 'Complete', 'Photo / Verification': 'Active', 'Printed': 'Active',
-        'Ready for Pickup': 'Scheduled', 'Needs Clarification': 'Waiting', 'Assigned': 'Active', 'Testing': 'Active', 'In Progress': 'Active',
-        'Waiting on User': 'Waiting', 'Scheduled': 'Scheduled', 'Resolved': 'Complete', 'Closed': 'Closed'
-      };
-      return map[step] || 'Active';
-    }
-
-    function inferNextAction(category, step) {
-      const steps = categoryConfig[category]?.steps || [];
-      const idx = steps.indexOf(step);
-      return idx >= 0 && idx < steps.length - 1 ? `Next workflow step: ${steps[idx + 1]}` : 'Review for final follow-up or closure';
-    }
-
-    function getBlurbTemplate(category, step) {
-      return categoryConfig[category]?.blurbs?.[step] || 'Update completed for [DEVICE] on [DATE]. Reference: [MTN]. [BUDGET]';
-    }
-
-    function renderBlurbPreview() {
-      const ticket = getSelectedTicket();
-      if (!ticket) return;
-      els.blurbPreview.textContent = fillTemplate(getBlurbTemplate(ticket.category, ticket.workflowStep), ticket);
-    }
-
-    function fillTemplate(template, ticket) {
-      const date = els.varDate.value || new Date().toISOString().slice(0, 10);
-      return template
-        .replaceAll('[DATE]', formatDateOnly(date))
-        .replaceAll('[DEVICE]', (els.varDevice.value || ticket.subcategory || ticket.summary || 'item').trim())
-        .replaceAll('[MTN]', (els.varMtn.value || ticket.reference || 'N/A').trim())
-        .replaceAll('[BUDGET]', (els.varBudget.value || 'None').trim());
-    }
-
-    async function copyCurrentBlurb() {
-      try {
-        await navigator.clipboard.writeText(els.blurbPreview.textContent.trim());
-        showToast('Blurb copied');
-      } catch {
-        showToast('Clipboard failed');
-      }
-    }
-
-    function addCurrentBlurbAsNote() {
-      const ticket = getSelectedTicket();
-      if (!ticket) return;
-      pushNote(ticket, els.blurbPreview.textContent.trim());
-      persist();
-      renderNotes(ticket);
-      showToast('Blurb added to notes');
-    }
-
-    function saveManualNote() {
-      const ticket = getSelectedTicket();
-      const text = els.noteInput.value.trim();
-      if (!ticket || !text) {
-        showToast('Enter a note first');
-        return;
-      }
-      pushNote(ticket, text);
-      ticket.updatedAt = new Date().toISOString();
-      els.noteInput.value = '';
-      persist();
-      renderNotes(ticket);
-      showToast('Note saved');
-    }
-
-    function quickApplyStep(step) {
-      const ticketId = els.quickTicketSelect.value || appState.selectedTicketId;
-      if (!ticketId) {
-        showToast('Select a ticket first');
-        return;
-      }
-      appState.selectedTicketId = ticketId;
-      setWorkflowStep(ticketId, step);
-    }
-
-    function createTicket() {
-      const summary = els.newSummary.value.trim();
-      const requestor = els.newRequestor.value.trim();
-      const category = els.newCategory.value;
-      if (!summary || !requestor || !category) {
-        showToast('Summary, requestor, and category are required');
-        return;
-      }
-      const ticket = {
-        id: nextTicketId(), summary, requestor, category,
-        subcategory: els.newSubcategory.value.trim() || 'General',
-        campus: els.newCampus.value.trim() || '—',
-        priority: els.newPriority.value,
-        assignedTo: els.newAssigned.value.trim() || 'Unassigned',
-        reference: els.newRef.value.trim(),
-        universalStatus: 'New',
-        workflowStep: categoryConfig[category]?.steps?.[0] || 'Request',
-        nextAction: 'Review ticket and set workflow step',
-        updatedAt: new Date().toISOString(),
-        notes: [], checklistState: {}
-      };
-      appState.tickets.unshift(ticket);
-      appState.selectedTicketId = ticket.id;
-      clearCreateForm();
-      persist();
-      renderAll();
-      showScreen('detail');
-      showToast(`Created ${ticket.id}`);
-    }
-
-    async function importTickets() {
-      try {
-        let imported = [];
-        const pasted = els.pasteImportInput.value.trim();
-        const file = els.importFileInput.files && els.importFileInput.files[0];
-        if (pasted) {
-          imported = normalizeImportedTickets(JSON.parse(pasted));
-        } else if (file) {
-          const text = await file.text();
-          imported = file.name.toLowerCase().endsWith('.json') ? normalizeImportedTickets(JSON.parse(text)) : normalizeImportedTickets(parseCsv(text));
-        } else {
-          showToast('Choose a file or paste JSON');
-          return;
-        }
-        if (!imported.length) {
-          showToast('No usable tickets found');
-          return;
-        }
-        const existing = new Map(appState.tickets.map(t => [t.id, t]));
-        imported.forEach(t => existing.set(t.id, t));
-        appState.tickets = Array.from(existing.values()).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-        appState.selectedTicketId = imported[0].id;
-        els.importFileInput.value = '';
-        els.pasteImportInput.value = '';
-        persist();
-        renderAll();
-        showScreen('dashboard');
-        showToast(`Imported ${imported.length} ticket(s)`);
-      } catch (e) {
-        console.error(e);
-        showToast('Import failed');
-      }
-    }
-
-    function exportTickets() {
-      const blob = new Blob([JSON.stringify(appState.tickets, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'rp-ticket-assistant-export.json';
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('Tickets exported');
-    }
-
-    function normalizeImportedTickets(input) {
-      const rows = Array.isArray(input) ? input : (input && input.tickets) || [];
-      return rows.map((row, index) => {
-        const category = pickCategory(row.category);
-        const firstStep = categoryConfig[category]?.steps?.[0] || 'Request';
-        const workflowStep = validWorkflowStep(category, row.workflowStep) ? row.workflowStep : firstStep;
-        return {
-          id: String(row.id || row.number || row.ticketId || `RP-IMP-${Date.now()}-${index + 1}`).trim(),
-          summary: String(row.summary || row.briefDescription || row.title || 'Imported Ticket').trim(),
-          requestor: String(row.requestor || row.requester || row.caller || 'Unknown').trim(),
-          category,
-          subcategory: String(row.subcategory || row.type || 'General').trim(),
-          campus: String(row.campus || row.location || row.branch || '—').trim(),
-          priority: String(row.priority || 'Normal').trim(),
-          assignedTo: String(row.assignedTo || row.assignee || row.operator || row.technician || 'Unassigned').trim(),
-          reference: String(row.reference || row.mtn || row.asset || '').trim(),
-          universalStatus: String(row.universalStatus || inferUniversalStatus(workflowStep)).trim(),
-          workflowStep,
-          nextAction: String(row.nextAction || inferNextAction(category, workflowStep)).trim(),
-          updatedAt: row.updatedAt || row.modified || row.lastUpdated || new Date().toISOString(),
-          notes: Array.isArray(row.notes) ? row.notes : [],
-          checklistState: row.checklistState && typeof row.checklistState === 'object' ? row.checklistState : {}
-        };
-      }).filter(t => t.id && t.summary);
-    }
-
-    function parseCsv(text) {
-      const lines = text.split(/\r?\n/).filter(Boolean);
-      if (!lines.length) return [];
-      const headers = splitCsvLine(lines[0]).map(h => h.trim());
-      return lines.slice(1).map(line => {
-        const values = splitCsvLine(line);
-        const row = {};
-        headers.forEach((header, i) => { row[header] = values[i] ?? ''; });
-        return row;
-      });
-    }
-
-    function splitCsvLine(line) {
-      const result = [];
-      let current = '';
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        const next = line[i + 1];
-        if (char === '"') {
-          if (inQuotes && next === '"') {
-            current += '"';
-            i++;
-          } else {
-            inQuotes = !inQuotes;
-          }
-        } else if (char === ',' && !inQuotes) {
-          result.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-      result.push(current.trim());
-      return result;
-    }
-
-    function pickCategory(value) {
-      const raw = String(value || '').trim().toLowerCase();
-      if (!raw) return 'General Support';
-      const exact = Object.keys(categoryConfig).find(category => category.toLowerCase() === raw);
-      if (exact) return exact;
-      if (raw.includes('cell')) return 'Cellular Devices';
-      if (raw.includes('badge')) return 'ID Badges';
-      if (raw.includes('softdoc')) return 'SoftDocs';
-      return 'General Support';
-    }
-
-    function validWorkflowStep(category, step) {
-      return !!(categoryConfig[category] && categoryConfig[category].steps.includes(step));
-    }
-
-    function populateCategorySelects() {
-      els.newCategory.innerHTML = Object.keys(categoryConfig).map(cat => `<option>${escapeHtml(cat)}</option>`).join('');
-    }
-
-    function clearCreateForm() {
-      els.newSummary.value = '';
-      els.newRequestor.value = '';
-      els.newSubcategory.value = '';
-      els.newCampus.value = '';
-      els.newPriority.value = 'Normal';
-      els.newAssigned.value = '';
-      els.newRef.value = '';
-      els.newCategory.selectedIndex = 0;
-    }
-
-    function pushNote(ticket, text) {
-      if (!ticket.notes) ticket.notes = [];
-      ticket.notes.push({ at: new Date().toISOString(), text });
-    }
-
-    function setDefaultVars() {
-      els.varDate.value = new Date().toISOString().slice(0, 10);
-      els.varDevice.value = '';
-      els.varMtn.value = '';
-      els.varBudget.value = '';
-    }
-
-    function resetDemoData() {
-      if (!confirm('Reset the app to demo data? This clears current local changes.')) return;
-      appState = structuredClone(demoData);
-      persist();
-      setDefaultVars();
-      renderAll();
-      showScreen('dashboard');
-      showToast('Demo data restored');
-    }
-
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return structuredClone(demoData);
-        const parsed = JSON.parse(raw);
-        return parsed && parsed.tickets && parsed.tickets.length ? parsed : structuredClone(demoData);
-      } catch {
-        return structuredClone(demoData);
-      }
-    }
-
-    function persist() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-    }
-
-    function nextTicketId() {
-      const nums = appState.tickets.map(t => Number(String(t.id).replace(/[^0-9]/g, ''))).filter(n => !Number.isNaN(n));
-      return `RP-${(nums.length ? Math.max(...nums) : 1000) + 1}`;
-    }
-
-    function formatDateOnly(value) {
-      return new Date(`${value}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-    }
-
-    function formatDateTime(value) {
-      return new Date(value).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-    }
-
-    function showToast(message) {
-      els.toast.textContent = message;
-      els.toast.classList.add('show');
-      clearTimeout(showToast._timer);
-      showToast._timer = setTimeout(() => els.toast.classList.remove('show'), 1800);
+    function clearForm() {
+      blurbId.value = '';
+      blurbName.value = '';
+      blurbCategory.value = '';
+      blurbTags.value = '';
+      blurbText.value = '';
+      document.getElementById('formTitle').textContent = 'Add / Edit Blurb';
     }
 
     function escapeHtml(str) {
-      return String(str ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const name = blurbName.value.trim();
+      const category = blurbCategory.value.trim();
+      const text = blurbText.value.trim();
+      const tags = blurbTags.value.split(',').map(t => t.trim()).filter(Boolean);
+
+      if (!name || !text) {
+        showStatus('Blurb name and text are required.');
+        return;
+      }
+
+      const existingId = blurbId.value;
+      if (existingId) {
+        const index = blurbs.findIndex(b => b.id === existingId);
+        if (index !== -1) {
+          blurbs[index] = { ...blurbs[index], name, category, tags, text };
+          selectedId = existingId;
+        }
+        showStatus('Blurb updated.');
+      } else {
+        const newBlurb = { id: crypto.randomUUID(), name, category, tags, text };
+        blurbs.push(newBlurb);
+        selectedId = newBlurb.id;
+        showStatus('Blurb saved.');
+      }
+
+      saveBlurbs();
+      renderDetail();
+      fillForm(blurbs.find(b => b.id === selectedId));
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', clearForm);
+
+    document.getElementById('newBlurbBtn').addEventListener('click', () => {
+      selectedId = null;
+      renderList();
+      renderDetail();
+      clearForm();
+      blurbName.focus();
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const data = JSON.stringify(blurbs, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'rp-blurb-library.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showStatus('Blurbs exported.');
+    });
+
+    document.getElementById('importBtn').addEventListener('click', () => {
+      document.getElementById('importFile').click();
+    });
+
+    document.getElementById('importFile').addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const imported = JSON.parse(text);
+        if (!Array.isArray(imported)) throw new Error('Invalid format');
+
+        blurbs = imported.map(item => ({
+          id: item.id || crypto.randomUUID(),
+          name: item.name || 'Untitled Blurb',
+          category: item.category || '',
+          tags: Array.isArray(item.tags) ? item.tags : [],
+          text: item.text || ''
+        }));
+
+        selectedId = null;
+        saveBlurbs();
+        renderDetail();
+        clearForm();
+        showStatus('Blurbs imported.');
+      } catch {
+        showStatus('Import failed. Use a valid JSON file.');
+      }
+      event.target.value = '';
+    });
+
+    searchInput.addEventListener('input', renderList);
+    categoryFilter.addEventListener('change', renderList);
+
+    refreshCategoryFilter();
+    renderList();
+    renderDetail();
+  
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js').catch(err => console.error('Service worker registration failed:', err));
+        navigator.serviceWorker.register('./service-worker.js').catch((error) => {
+          console.error('Service worker registration failed:', error);
+        });
       });
     }
   </script>
