@@ -66,11 +66,11 @@
       margin-top: 16px;
     }
 
-    input, textarea, select, button {
+    input, select, button {
       font: inherit;
     }
 
-    input, textarea, select {
+    input, select {
       width: 100%;
       padding: 12px 14px;
       border: 1px solid var(--border);
@@ -78,10 +78,51 @@
       background: #fff;
     }
 
-    textarea {
-      min-height: 170px;
-      resize: vertical;
-      line-height: 1.5;
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f9fafb;
+    }
+
+    .toolbar button {
+      padding: 8px 10px;
+      min-width: 42px;
+    }
+
+    .toolbar .format-btn {
+      background: #ffffff;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .toolbar .format-btn:hover {
+      background: #eef2f7;
+    }
+
+    .rich-editor {
+      width: 100%;
+      min-height: 190px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      line-height: 1.65;
+      outline: none;
+      overflow: auto;
+    }
+
+    .rich-editor:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(139, 30, 45, 0.12);
+    }
+
+    .rich-editor:empty::before {
+      content: attr(data-placeholder);
+      color: var(--muted);
     }
 
     button {
@@ -190,9 +231,26 @@
       background: #fff;
       border-radius: 12px;
       padding: 16px;
-      white-space: pre-wrap;
-      line-height: 1.6;
+      white-space: normal;
+      line-height: 1.65;
       min-height: 280px;
+    }
+
+    .blurb-body p,
+    .rich-editor p {
+      margin: 0 0 10px;
+    }
+
+    .blurb-body p:last-child,
+    .rich-editor p:last-child {
+      margin-bottom: 0;
+    }
+
+    .blurb-body a,
+    .rich-editor a {
+      color: var(--accent);
+      font-weight: 700;
+      text-decoration: underline;
     }
 
     .form-grid {
@@ -262,7 +320,14 @@
             <input type="text" id="blurbCategory" placeholder="Category (example: Cellular Devices)" />
             <input type="text" id="blurbTags" placeholder="Tags (comma separated)" />
           </div>
-          <textarea id="blurbText" placeholder="Paste the full blurb here..."></textarea>
+          <div class="toolbar" aria-label="Blurb formatting tools">
+            <button type="button" class="format-btn" data-command="bold"><strong>B</strong></button>
+            <button type="button" class="format-btn" data-command="italic"><em>I</em></button>
+            <button type="button" class="format-btn" data-command="underline"><u>U</u></button>
+            <button type="button" id="linkBtn" class="secondary">Add/Edit Link</button>
+            <button type="button" id="removeLinkBtn" class="secondary">Remove Link</button>
+          </div>
+          <div id="blurbText" class="rich-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Paste or type the full blurb here..."></div>
           <div class="detail-actions">
             <button id="saveBtn">Save Blurb</button>
             <button id="clearBtn" class="secondary">Clear Form</button>
@@ -474,6 +539,71 @@
     const blurbTags = document.getElementById('blurbTags');
     const blurbText = document.getElementById('blurbText');
 
+    function looksLikeHtml(value) {
+      return /<\/?[a-z][\s\S]*>/i.test(String(value || ''));
+    }
+
+    function plainTextToHtml(text) {
+      const value = String(text || '').replace(/\r\n/g, '\n');
+      return value
+        .split(/\n{2,}|\n/g)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => `<p>${escapeHtml(line)}</p>`)
+        .join('');
+    }
+
+    function normalizeEditorHtml(html) {
+      return String(html || '')
+        .replace(/<div><br><\/div>/gi, '<p></p>')
+        .replace(/<div>/gi, '<p>')
+        .replace(/<\/div>/gi, '</p>')
+        .replace(/<br\s*\/?>/gi, '<br>')
+        .trim();
+    }
+
+    function sanitizeBlurbHtml(html) {
+      const template = document.createElement('template');
+      template.innerHTML = normalizeEditorHtml(html);
+      const allowedTags = ['B', 'STRONG', 'I', 'EM', 'U', 'A', 'P', 'BR', 'UL', 'OL', 'LI'];
+
+      template.content.querySelectorAll('*').forEach((node) => {
+        if (!allowedTags.includes(node.tagName)) {
+          node.replaceWith(...node.childNodes);
+          return;
+        }
+
+        [...node.attributes].forEach((attr) => {
+          const attrName = attr.name.toLowerCase();
+          if (node.tagName === 'A' && ['href', 'target', 'rel'].includes(attrName)) return;
+          node.removeAttribute(attr.name);
+        });
+
+        if (node.tagName === 'A') {
+          const href = node.getAttribute('href') || '';
+          if (!/^https?:\/\//i.test(href) && !/^mailto:/i.test(href)) {
+            node.removeAttribute('href');
+          } else {
+            node.setAttribute('target', '_blank');
+            node.setAttribute('rel', 'noopener noreferrer');
+          }
+        }
+      });
+
+      return template.innerHTML.trim();
+    }
+
+    function getBlurbHtml(text) {
+      return sanitizeBlurbHtml(looksLikeHtml(text) ? text : plainTextToHtml(text));
+    }
+
+    function htmlToPlainText(html) {
+      const temp = document.createElement('div');
+      temp.innerHTML = html;
+      return temp.innerText.trim();
+    }
+
+
     function loadBlurbs() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) {
@@ -577,12 +707,24 @@
             <button id="deleteBtn" class="secondary">Delete</button>
           </div>
         </div>
-        <div class="blurb-body">${escapeHtml(item.text)}</div>
+        <div class="blurb-body">${getBlurbHtml(item.text)}</div>
       `;
 
       document.getElementById('copyBtn').addEventListener('click', async () => {
         try {
-          await navigator.clipboard.writeText(item.text);
+          const html = getBlurbHtml(item.text);
+          const plainText = htmlToPlainText(html);
+
+          if (navigator.clipboard.write && window.ClipboardItem) {
+            await navigator.clipboard.write([
+              new ClipboardItem({
+                'text/html': new Blob([html], { type: 'text/html' }),
+                'text/plain': new Blob([plainText], { type: 'text/plain' })
+              })
+            ]);
+          } else {
+            await navigator.clipboard.writeText(plainText);
+          }
           showStatus('Blurb copied to clipboard.');
         } catch {
           showStatus('Copy failed.');
@@ -604,7 +746,7 @@
       blurbName.value = item.name || '';
       blurbCategory.value = item.category || '';
       blurbTags.value = (item.tags || []).join(', ');
-      blurbText.value = item.text || '';
+      blurbText.innerHTML = getBlurbHtml(item.text || '');
       document.getElementById('formTitle').textContent = 'Edit Blurb';
     }
 
@@ -613,7 +755,7 @@
       blurbName.value = '';
       blurbCategory.value = '';
       blurbTags.value = '';
-      blurbText.value = '';
+      blurbText.innerHTML = '';
       document.getElementById('formTitle').textContent = 'Add / Edit Blurb';
     }
 
@@ -629,10 +771,11 @@
     document.getElementById('saveBtn').addEventListener('click', () => {
       const name = blurbName.value.trim();
       const category = blurbCategory.value.trim();
-      const text = blurbText.value.trim();
+      const text = sanitizeBlurbHtml(blurbText.innerHTML);
+      const plainText = htmlToPlainText(text);
       const tags = blurbTags.value.split(',').map(t => t.trim()).filter(Boolean);
 
-      if (!name || !text) {
+      if (!name || !plainText) {
         showStatus('Blurb name and text are required.');
         return;
       }
@@ -708,6 +851,56 @@
         showStatus('Import failed. Use a valid JSON file.');
       }
       event.target.value = '';
+    });
+
+
+    document.querySelectorAll('[data-command]').forEach((button) => {
+      button.addEventListener('click', () => {
+        blurbText.focus();
+        document.execCommand(button.dataset.command, false, null);
+      });
+    });
+
+    document.getElementById('linkBtn').addEventListener('click', () => {
+      blurbText.focus();
+
+      const selectedText = window.getSelection().toString();
+      const displayText = selectedText || prompt('Display text for the link:');
+      if (!displayText) return;
+
+      let url = prompt('Link URL:');
+      if (!url) return;
+
+      if (!/^https?:\/\//i.test(url) && !/^mailto:/i.test(url)) {
+        url = 'https://' + url;
+      }
+
+      if (!selectedText) {
+        document.execCommand(
+          'insertHTML',
+          false,
+          `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(displayText)}</a>`
+        );
+      } else {
+        document.execCommand('createLink', false, url);
+        document.querySelectorAll('.rich-editor a').forEach((anchor) => {
+          anchor.setAttribute('target', '_blank');
+          anchor.setAttribute('rel', 'noopener noreferrer');
+        });
+      }
+    });
+
+    document.getElementById('removeLinkBtn').addEventListener('click', () => {
+      blurbText.focus();
+      document.execCommand('unlink', false, null);
+    });
+
+    blurbText.addEventListener('paste', (event) => {
+      event.preventDefault();
+      const html = event.clipboardData.getData('text/html');
+      const plain = event.clipboardData.getData('text/plain');
+      const safeHtml = html ? sanitizeBlurbHtml(html) : plainTextToHtml(plain);
+      document.execCommand('insertHTML', false, safeHtml);
     });
 
     searchInput.addEventListener('input', renderList);
