@@ -61,7 +61,7 @@
 
     .controls {
       display: grid;
-      grid-template-columns: 1.4fr 0.8fr auto auto;
+      grid-template-columns: 1.4fr 0.8fr auto auto auto auto;
       gap: 10px;
       margin-top: 16px;
     }
@@ -271,6 +271,19 @@
       gap: 10px;
     }
 
+
+
+    .storage-warning {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid #f2c94c;
+      border-radius: 10px;
+      background: #fff8db;
+      color: #5f4600;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
     @media (max-width: 900px) {
       .layout {
         grid-template-columns: 1fr;
@@ -296,7 +309,10 @@
         </select>
         <button id="newBlurbBtn">New Blurb</button>
         <button id="exportBtn" class="secondary">Export JSON</button>
+        <button id="openLibraryFileBtn" class="secondary">Open Library File</button>
+        <button id="saveLibraryFileBtn" class="secondary">Save Library File</button>
       </div>
+      <div class="storage-warning">Browser storage is temporary. Use <strong>Save Library File</strong> to keep a real offline JSON backup you control.</div>
     </section>
 
     <section class="layout">
@@ -526,6 +542,7 @@
 
     let blurbs = loadBlurbs();
     let selectedId = null;
+    let currentLibraryFileHandle = null;
 
     const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
@@ -811,6 +828,83 @@
     });
 
     document.getElementById('exportBtn').addEventListener('click', () => {
+      exportLibraryDownload();
+      showStatus('Blurbs exported as JSON backup.');
+    });
+
+
+    async function writeLibraryToFile(handle) {
+      const writable = await handle.createWritable();
+      await writable.write(JSON.stringify(blurbs, null, 2));
+      await writable.close();
+    }
+
+    async function saveLibraryFile() {
+      try {
+        if ('showSaveFilePicker' in window) {
+          if (!currentLibraryFileHandle) {
+            currentLibraryFileHandle = await window.showSaveFilePicker({
+              suggestedName: 'rp-blurb-library.json',
+              types: [{
+                description: 'JSON Files',
+                accept: { 'application/json': ['.json'] }
+              }]
+            });
+          }
+          await writeLibraryToFile(currentLibraryFileHandle);
+          showStatus('Library saved to offline JSON file.');
+        } else {
+          exportLibraryDownload();
+          showStatus('Browser does not support direct file saving. JSON backup downloaded instead.');
+        }
+      } catch (error) {
+        if (error && error.name === 'AbortError') return;
+        showStatus('Library file save failed.');
+      }
+    }
+
+    async function openLibraryFile() {
+      try {
+        if (!('showOpenFilePicker' in window)) {
+          document.getElementById('importFile').click();
+          showStatus('Browser does not support direct file opening. Use Import JSON instead.');
+          return;
+        }
+
+        const [handle] = await window.showOpenFilePicker({
+          types: [{
+            description: 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }],
+          multiple: false
+        });
+
+        const file = await handle.getFile();
+        const importedText = await file.text();
+        const imported = JSON.parse(importedText);
+        if (!Array.isArray(imported)) throw new Error('Invalid format');
+
+        blurbs = imported.map(item => ({
+          id: item.id || crypto.randomUUID(),
+          name: item.name || 'Untitled Blurb',
+          category: item.category || '',
+          tags: Array.isArray(item.tags) ? item.tags : [],
+          text: item.text || ''
+        }));
+
+        currentLibraryFileHandle = handle;
+        selectedId = null;
+        saveBlurbs();
+        renderDetail();
+        clearForm();
+        showStatus('Offline library file opened and loaded.');
+      } catch (error) {
+        if (error && error.name === 'AbortError') return;
+        showStatus('Library file open failed.');
+      }
+    }
+
+    function exportLibraryDownload() {
       const data = JSON.stringify(blurbs, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -819,8 +913,10 @@
       a.download = 'rp-blurb-library.json';
       a.click();
       URL.revokeObjectURL(url);
-      showStatus('Blurbs exported.');
-    });
+    }
+
+    document.getElementById('openLibraryFileBtn').addEventListener('click', openLibraryFile);
+    document.getElementById('saveLibraryFileBtn').addEventListener('click', saveLibraryFile);
 
     document.getElementById('importBtn').addEventListener('click', () => {
       document.getElementById('importFile').click();
