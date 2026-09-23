@@ -103,6 +103,45 @@
       background: #eef2f7;
     }
 
+    .toolbar select {
+      width: auto;
+      min-width: 112px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .title-editor {
+      width: 100%;
+      min-height: 46px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      line-height: 1.35;
+      outline: none;
+      font-size: 18px;
+    }
+
+    .title-editor:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(139, 30, 45, 0.12);
+    }
+
+    .title-editor:empty::before {
+      content: attr(data-placeholder);
+      color: var(--muted);
+      font-weight: normal;
+    }
+
+    .detail-title span,
+    .blurb-body span,
+    .rich-editor span,
+    .title-editor span {
+      line-height: inherit;
+    }
+
     .rich-editor {
       width: 100%;
       min-height: 190px;
@@ -331,7 +370,23 @@
         <h2 id="formTitle">Add / Edit Blurb</h2>
         <div class="form-grid">
           <input type="hidden" id="blurbId" />
-          <input type="text" id="blurbName" placeholder="Blurb name" />
+          <div class="toolbar" aria-label="Blurb title formatting tools">
+            <button type="button" class="format-btn title-command" data-command="bold"><strong>B</strong></button>
+            <button type="button" class="format-btn title-command" data-command="italic"><em>I</em></button>
+            <button type="button" class="format-btn title-command" data-command="underline"><u>U</u></button>
+            <select id="titleFontSize" aria-label="Title font size">
+              <option value="">Title Size</option>
+              <option value="14">14 px</option>
+              <option value="16">16 px</option>
+              <option value="18">18 px</option>
+              <option value="20">20 px</option>
+              <option value="22">22 px</option>
+              <option value="24">24 px</option>
+              <option value="28">28 px</option>
+              <option value="32">32 px</option>
+            </select>
+          </div>
+          <div id="blurbName" class="title-editor" contenteditable="true" role="textbox" data-placeholder="Blurb name"></div>
           <div class="small-row">
             <input type="text" id="blurbCategory" placeholder="Category (example: Cellular Devices)" />
             <input type="text" id="blurbTags" placeholder="Tags (comma separated)" />
@@ -340,6 +395,18 @@
             <button type="button" class="format-btn" data-command="bold"><strong>B</strong></button>
             <button type="button" class="format-btn" data-command="italic"><em>I</em></button>
             <button type="button" class="format-btn" data-command="underline"><u>U</u></button>
+            <select id="bodyFontSize" aria-label="Blurb font size">
+              <option value="">Text Size</option>
+              <option value="12">12 px</option>
+              <option value="14">14 px</option>
+              <option value="16">16 px</option>
+              <option value="18">18 px</option>
+              <option value="20">20 px</option>
+              <option value="22">22 px</option>
+              <option value="24">24 px</option>
+              <option value="28">28 px</option>
+              <option value="32">32 px</option>
+            </select>
             <button type="button" id="linkBtn" class="secondary">Add/Edit Link</button>
             <button type="button" id="removeLinkBtn" class="secondary">Remove Link</button>
           </div>
@@ -582,7 +649,7 @@
     function sanitizeBlurbHtml(html) {
       const template = document.createElement('template');
       template.innerHTML = normalizeEditorHtml(html);
-      const allowedTags = ['B', 'STRONG', 'I', 'EM', 'U', 'A', 'P', 'BR', 'UL', 'OL', 'LI'];
+      const allowedTags = ['B', 'STRONG', 'I', 'EM', 'U', 'A', 'P', 'BR', 'UL', 'OL', 'LI', 'SPAN'];
 
       template.content.querySelectorAll('*').forEach((node) => {
         if (!allowedTags.includes(node.tagName)) {
@@ -593,6 +660,14 @@
         [...node.attributes].forEach((attr) => {
           const attrName = attr.name.toLowerCase();
           if (node.tagName === 'A' && ['href', 'target', 'rel'].includes(attrName)) return;
+          if (node.tagName === 'SPAN' && attrName === 'style') {
+            const match = attr.value.match(/font-size\s*:\s*(\d{1,2})px/i);
+            if (match) {
+              const size = Math.max(10, Math.min(48, Number(match[1])));
+              node.setAttribute('style', `font-size:${size}px`);
+              return;
+            }
+          }
           node.removeAttribute(attr.name);
         });
 
@@ -612,6 +687,66 @@
 
     function getBlurbHtml(text) {
       return sanitizeBlurbHtml(looksLikeHtml(text) ? text : plainTextToHtml(text));
+    }
+
+    function sanitizeTitleHtml(html) {
+      const template = document.createElement('template');
+      template.innerHTML = String(html || '');
+      const allowedTags = ['B', 'STRONG', 'I', 'EM', 'U', 'SPAN', 'BR'];
+
+      template.content.querySelectorAll('*').forEach((node) => {
+        if (!allowedTags.includes(node.tagName)) {
+          node.replaceWith(...node.childNodes);
+          return;
+        }
+
+        [...node.attributes].forEach((attr) => {
+          if (node.tagName === 'SPAN' && attr.name.toLowerCase() === 'style') {
+            const match = attr.value.match(/font-size\s*:\s*(\d{1,2})px/i);
+            if (match) {
+              const size = Math.max(10, Math.min(48, Number(match[1])));
+              node.setAttribute('style', `font-size:${size}px`);
+              return;
+            }
+          }
+          node.removeAttribute(attr.name);
+        });
+      });
+
+      return template.innerHTML.trim();
+    }
+
+    function applyFontSize(editor, size) {
+      if (!size) return;
+      editor.focus();
+
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        showStatus('Select the text you want to resize.');
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      if (!editor.contains(range.commonAncestorContainer)) {
+        showStatus('Select text inside the editor first.');
+        return;
+      }
+
+      const span = document.createElement('span');
+      span.style.fontSize = `${size}px`;
+
+      try {
+        range.surroundContents(span);
+      } catch {
+        const fragment = range.extractContents();
+        span.appendChild(fragment);
+        range.insertNode(span);
+      }
+
+      selection.removeAllRanges();
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      selection.addRange(newRange);
     }
 
     function htmlToPlainText(html) {
@@ -716,7 +851,7 @@
       detailView.innerHTML = `
         <div class="detail-header">
           <div>
-            <h3 class="detail-title">${escapeHtml(item.name)}</h3>
+            <h3 class="detail-title">${item.titleHtml ? sanitizeTitleHtml(item.titleHtml) : escapeHtml(item.name)}</h3>
             <div class="blurb-meta">${escapeHtml(item.category || 'Uncategorized')} • ${(item.tags || []).join(', ') || 'No tags'}</div>
           </div>
           <div class="detail-actions">
@@ -760,7 +895,7 @@
 
     function fillForm(item) {
       blurbId.value = item.id;
-      blurbName.value = item.name || '';
+      blurbName.innerHTML = item.titleHtml ? sanitizeTitleHtml(item.titleHtml) : escapeHtml(item.name || '');
       blurbCategory.value = item.category || '';
       blurbTags.value = (item.tags || []).join(', ');
       blurbText.innerHTML = getBlurbHtml(item.text || '');
@@ -769,7 +904,7 @@
 
     function clearForm() {
       blurbId.value = '';
-      blurbName.value = '';
+      blurbName.innerHTML = '';
       blurbCategory.value = '';
       blurbTags.value = '';
       blurbText.innerHTML = '';
@@ -786,7 +921,8 @@
     }
 
     document.getElementById('saveBtn').addEventListener('click', () => {
-      const name = blurbName.value.trim();
+      const titleHtml = sanitizeTitleHtml(blurbName.innerHTML);
+      const name = blurbName.innerText.trim();
       const category = blurbCategory.value.trim();
       const text = sanitizeBlurbHtml(blurbText.innerHTML);
       const plainText = htmlToPlainText(text);
@@ -801,12 +937,12 @@
       if (existingId) {
         const index = blurbs.findIndex(b => b.id === existingId);
         if (index !== -1) {
-          blurbs[index] = { ...blurbs[index], name, category, tags, text };
+          blurbs[index] = { ...blurbs[index], name, titleHtml, category, tags, text };
           selectedId = existingId;
         }
         showStatus('Blurb updated.');
       } else {
-        const newBlurb = { id: crypto.randomUUID(), name, category, tags, text };
+        const newBlurb = { id: crypto.randomUUID(), name, titleHtml, category, tags, text };
         blurbs.push(newBlurb);
         selectedId = newBlurb.id;
         showStatus('Blurb saved.');
@@ -887,6 +1023,7 @@
         blurbs = imported.map(item => ({
           id: item.id || crypto.randomUUID(),
           name: item.name || 'Untitled Blurb',
+          titleHtml: item.titleHtml || '',
           category: item.category || '',
           tags: Array.isArray(item.tags) ? item.tags : [],
           text: item.text || ''
@@ -950,11 +1087,28 @@
     });
 
 
-    document.querySelectorAll('[data-command]').forEach((button) => {
+    document.querySelectorAll('.toolbar:not([aria-label="Blurb title formatting tools"]) [data-command]').forEach((button) => {
       button.addEventListener('click', () => {
         blurbText.focus();
         document.execCommand(button.dataset.command, false, null);
       });
+    });
+
+    document.querySelectorAll('.title-command').forEach((button) => {
+      button.addEventListener('click', () => {
+        blurbName.focus();
+        document.execCommand(button.dataset.command, false, null);
+      });
+    });
+
+    document.getElementById('bodyFontSize').addEventListener('change', (event) => {
+      applyFontSize(blurbText, event.target.value);
+      event.target.value = '';
+    });
+
+    document.getElementById('titleFontSize').addEventListener('change', (event) => {
+      applyFontSize(blurbName, event.target.value);
+      event.target.value = '';
     });
 
     document.getElementById('linkBtn').addEventListener('click', () => {
